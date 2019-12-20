@@ -12,7 +12,7 @@ namespace HttpRequestProcessing
                 new ResponseModel
                 {
                     StatusCode = StatusCodes.Status200OK,
-                    Body = $"requested path: {request.Path}"
+                    Body = $"requested path: {request.Path}{request.QueryString}"
                 }
             );
         }

@@ -27,6 +27,7 @@ namespace HttpRequestProcessing
             {
                 Method = context.Request.Method.ToString(),
                 Path = context.Request.Path.Value,
+                QueryString = context.Request.QueryString.Value,
                 Body = body
             };
 
