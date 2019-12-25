@@ -26,6 +26,12 @@ namespace HttpRequestProcessing
         public void ConfigureServices(IServiceCollection services)
         {
             RegisterApplicationServices(services);
+            ConfigureOptions(services);
+        }
+
+        private void ConfigureOptions(IServiceCollection services)
+        {
+            services.Configure<FileSystemMessageBusOptions>(Configuration.GetSection("FileSystemMessageBus"));
         }
 
         private void RegisterApplicationServices(IServiceCollection services)
