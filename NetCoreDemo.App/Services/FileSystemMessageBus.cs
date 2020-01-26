@@ -10,16 +10,16 @@ namespace HttpRequestProcessing
     {
         private FileSystemWatcher _fileWatcher;
         private bool _isDisposed = false;
-        private ConcurrentDictionary<string, TaskCompletionSource<ResponseModel>> _watchedTasks =
-                new ConcurrentDictionary<string, TaskCompletionSource<ResponseModel>>();
-        private readonly IRequestToFileNameMapper fileNameMapper;
+        private ConcurrentDictionary<string, TaskCompletionSource<object>> _watchedTasks =
+                new ConcurrentDictionary<string, TaskCompletionSource<object>>();
+        private readonly IRequestToFileNameMapper _fileNameMapper;
 
         public FileSystemMessageBus(FileSystemMessageBusOptions options, IRequestToFileNameMapper fileNameMapper)
         {
             _fileWatcher = new FileSystemWatcher(options.StorageFolderPath);
-            _fileWatcher.EnableRaisingEvents = false;
+            _fileWatcher.EnableRaisingEvents = true;
             _fileWatcher.Created += OnFileCreated;
-            this.fileNameMapper = fileNameMapper;
+            this._fileNameMapper = fileNameMapper;
         }
 
         private void OnFileCreated(object sender, FileSystemEventArgs e)
@@ -36,10 +36,22 @@ namespace HttpRequestProcessing
             _isDisposed = true;
         }
 
-        public Task<ResponseModel> Process(RequestModel request, CancellationToken cancellationToken)
+        public async Task<ResponseModel> Process(RequestModel request, CancellationToken cancellationToken)
         {
-            _fileWatcher.EnableRaisingEvents = false;
-            return Task.FromResult(new ResponseModel());
+            
+            var taskCompletionSource = new TaskCompletionSource<object>();
+            using (var cancellationRegistration = cancellationToken.Register(() => taskCompletionSource.SetCanceled()))
+            {
+                var fileName = _fileNameMapper.GetFileNameForRequest(request);
+                //TODO Нужно учесть ситуацию, когда уже ожидается ответ на совпадающий запрос
+                //варианты - регистрировать всех клиентов на уровне события и в событии вычитывать файл и уведомлять все TCS-ы
+                //в2 - регистрировать один CTS на файл и ещё один на каждого клиента для возможности отработать внешний Cancel
+                _watchedTasks.AddOrUpdate()
+                await taskCompletionSource.Task;
+
+                PutRequestIntoFile(fileName, request);
+                return Task.FromResult(new ResponseModel());
+            }
         }
     }
 }
